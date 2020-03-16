@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.drcnet.platform.gateway.mapper.DatasetSourceMapper">
+  <resultMap id="BaseResultMap" type="com.drcnet.platform.common.entity.DatasetSource">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="b_user_id" jdbcType="BIGINT" property="bUserId" />
+    <result column="dataset_id" jdbcType="BIGINT" property="datasetId" />
+    <result column="data_item_id" jdbcType="BIGINT" property="dataItemId" />
+    <result column="data_type" jdbcType="INTEGER" property="dataType" />
+    <result column="is_time" jdbcType="BIT" property="isTime" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="end_time" jdbcType="TIMESTAMP" property="endTime" />
+    <result column="is_num" jdbcType="BIT" property="isNum" />
+    <result column="residue_num" jdbcType="INTEGER" property="residueNum" />
+    <result column="is_concurrent" jdbcType="BIT" property="isConcurrent" />
+    <result column="concurrent_num" jdbcType="INTEGER" property="concurrentNum" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="version" jdbcType="INTEGER" property="version" />
+  </resultMap>
+
+    <select id="getDataSource" resultMap="BaseResultMap">
+        select * from dataset_source where status = 1 and b_user_id = #{userId} and data_item_id = #{datasetId} and data_type = #{dataType}
+    </select>
+
+    <select id="getUserIdBySecretKey" resultType="java.lang.Long">
+        select id from business_user where secret_key = #{secretKey} limit 1
+    </select>
+
+    <select id="getDatasetIdByFileId" resultType="java.lang.Long">
+        select dataset_id from data_item_file f,data_item_piece p where f.data_item_piece_id = p.id  and f.id= #{fileId}
+    </select>
+</mapper>

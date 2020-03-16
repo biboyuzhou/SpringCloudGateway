@@ -1,0 +1,108 @@
+server:
+  port: 8000
+
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    org.springframework.cloud.gateway: debug
+    com.windmt.filter: debug
+spring:
+  application:
+    name: platform-gateway-service
+  cloud:
+    consul:
+      host: 30.0.0.226
+      port: 8500
+      healthCheckInterval: 60s
+      discovery:
+        instance-id: ${spring.application.name}:${spring.cloud.client.ip-address}
+        prefer-ip-address: true
+        serviceName: platform-gateway-service
+        #ip-address: 127.0.0.1
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: desk_service
+          #lb代表从注册中心获取服务
+          uri: lb://desk-service
+          predicates:
+            - Path= /**/desk/**
+          filters:
+            - StripPrefix=2
+        - id: rate_limit_route
+          #lb代表从注册中心获取服务
+          uri: lb://hello-service
+          predicates:
+            - Path= /forward/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@hostAddrKeyResolver}"
+                #令牌通每秒填充平均速率。
+                redis-rate-limiter.replenishRate: 10
+                #令牌桶的总容量
+                redis-rate-limiter.burstCapacity: 20
+            - name: Hystrix
+              args:
+                name: fallbackcmd
+                fallbackUri: forward:/fallback
+  redis:
+    host: 30.0.0.226
+    password: 12345678
+    timeout: 5000
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://10.0.0.53/platform?useUnicode=true&characterEncoding=utf8
+    username: root
+    password: 12345678
+    druid:
+      # 连接池的配置信息
+      # 初始化大小，最小，最大
+      initial-size: 5
+      min-idle: 5
+      maxActive: 20
+      # 配置获取连接等待超时的时间
+      maxWait: 60000
+      # 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
+      timeBetweenEvictionRunsMillis: 60000
+      # 配置一个连接在池中最小生存的时间，单位是毫秒
+      minEvictableIdleTimeMillis: 300000
+      validationQuery: SELECT 1
+      testWhileIdle: true
+      testOnBorrow: false
+      testOnReturn: false
+      # 打开PSCache，并且指定每个连接上PSCache的大小
+      poolPreparedStatements: true
+      maxPoolPreparedStatementPerConnectionSize: 20
+      # 配置监控统计拦截的filters，去掉后监控界面sql无法统计，'wall'用于防火墙
+      filters: stat,wall,slf4j
+      # 通过connectProperties属性来打开mergeSql功能；慢SQL记录
+      connectionProperties: druid.stat.mergeSql\=true;druid.stat.slowSqlMillis\=5000
+      # 配置DruidStatFilter
+      web-stat-filter:
+        enabled: true
+        url-pattern: "/*"
+        exclusions: "*.js,*.gif,*.jpg,*.bmp,*.png,*.css,*.ico,/druid/*"
+      # 配置DruidStatViewServlet
+      stat-view-servlet:
+        url-pattern: "/druid/*"
+        # IP白名单(没有配置或者为空，则允许所有访问)
+        #allow: 127.0.0.1,192.168.163.1
+        # IP黑名单 (存在共同时，deny优先于allow)
+        #deny: 192.168.1.73
+        #  禁用HTML页面上的“Reset All”功能
+        reset-enable: false
+        # 登录名
+        login-username: admin
+        # 登录密码
+        login-password: 123456
+        enabled: true
+mybatis:
+  mapper-locations: classpath*:mapper/*.xml
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  # 设置与服务注册发现组件结合，这样可以采用服务名的路由策略
